@@ -3,222 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium Terminal</title>
+    <title>Danil Tushkov | Private Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg: #0a0a0f;
-            --card-bg: #161621;
+            --bg: #050508;
+            --card-bg: #11111d;
             --accent: #b829ea;
             --green: #00ff88;
             --red: #ff3b3b;
+            --text: #ffffff;
         }
+
         body {
             background-color: var(--bg);
-            color: #fff;
+            color: var(--text);
             font-family: 'Segoe UI', Roboto, sans-serif;
-            margin: 0; padding: 15px;
-            padding-bottom: 80px;
-        }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; }
-        
-        /* Сетка курсов */
-        .rates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .rate-card {
-            background: var(--card-bg);
+            margin: 0;
             padding: 15px;
-            border-radius: 16px;
+            padding-bottom: 100px;
+            overflow-x: hidden;
+        }
+
+        /* Шапка */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid rgba(184, 41, 234, 0.3);
+            margin-bottom: 25px;
+        }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .avatar { 
+            width: 45px; height: 45px; border-radius: 50%; 
+            background: var(--accent); border: 2px solid var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        #clock { font-family: 'Courier New', monospace; color: var(--accent); font-weight: bold; }
+
+        /* Заголовки */
+        .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            margin: 30px 0 15px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Крупные карточки валют */
+        .rates-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .rate-card {
+            background: linear-gradient(145deg, #161621, #0a0a0f);
+            padding: 25px;
+            border-radius: 24px;
             border: 1px solid rgba(184, 41, 234, 0.2);
             position: relative;
-            overflow: hidden;
+            transition: 0.3s;
         }
-        .rate-card::after {
-            content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(184, 41, 234, 0.1) 0%, transparent 70%);
+        .rate-card:active { transform: scale(0.97); }
+        .rate-title { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
+        .rate-value { font-size: 28px; font-weight: 900; color: var(--green); text-shadow: 0 0 15px rgba(0, 255, 136, 0.3); }
+        .trend {
+            position: absolute; top: 25px; right: 25px;
+            font-size: 14px; font-weight: bold; padding: 5px 10px; border-radius: 8px;
         }
-        .rate-title { font-size: 12px; color: #888; margin-bottom: 5px; }
-        .rate-value { font-size: 16px; font-weight: bold; }
-        .trend { font-size: 11px; margin-top: 5px; display: flex; align-items: center; gap: 3px; }
-        .up { color: var(--green); } .down { color: var(--red); }
+        .up { background: rgba(0, 255, 136, 0.1); color: var(--green); }
+        .down { background: rgba(255, 59, 59, 0.1); color: var(--red); }
 
-        /* Секция парсинга */
-        .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px; color: var(--accent); text-shadow: 0 0 5px var(--accent); }
-        .scan-box {
+        /* Финансовый терминал (Карта) */
+        .card-box {
             background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0f 100%);
-            padding: 20px; border-radius: 20px; border: 1px solid var(--accent);
-            margin-bottom: 20px;
+            padding: 25px; border-radius: 24px; border: 1px solid var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .card-number { color: #555; font-family: monospace; letter-spacing: 3px; margin-bottom: 5px; }
+        .card-balance { font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #fff; }
+        
         input {
             width: 100%; background: #000; border: 1px solid #333;
-            padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 10px;
-            box-sizing: border-box; outline: none; font-family: 'Courier New', monospace;
+            padding: 15px; border-radius: 12px; color: #fff; margin-bottom: 10px;
+            box-sizing: border-box; outline: none; font-size: 16px;
         }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(184, 41, 234, 0.5); }
         button {
             width: 100%; background: var(--accent); color: #fff; border: none;
-            padding: 15px; border-radius: 12px; font-weight: bold; font-size: 16px;
-            box-shadow: 0 4px 15px rgba(184, 41, 234, 0.4); cursor: pointer; transition: 0.2s;
+            padding: 18px; border-radius: 12px; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(184, 41, 234, 0.4);
         }
-        button:active { transform: scale(0.98); }
 
-        /* Результаты парсинга */
-        #results {
-            background: var(--card-bg); border-radius: 16px; padding: 15px;
-            border: 1px solid #333; display: none;
-        }
+        /* Сканер */
+        .scan-box { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid #222; }
+        #results { margin-top: 15px; display: none; }
         .result-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222;
         }
-        .result-item:last-child { border-bottom: none; }
-        .item-name { font-size: 14px; color: #ccc; }
-        .item-price { font-size: 16px; font-weight: bold; color: var(--accent); }
-        .loader { color: var(--green); font-family: 'Courier New', monospace; text-align: center; display: none; margin-top: 10px;}
+        .loader { color: var(--accent); text-align: center; display: none; margin: 10px 0; font-family: monospace; }
 
-        /* Нижнее меню */
+        /* Меню */
         .nav {
             position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(22, 22, 33, 0.95);
-            display: flex; justify-content: space-around; padding: 15px;
-            backdrop-filter: blur(10px); border-top: 1px solid #333; z-index: 10;
+            background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(15px);
+            display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid #222;
         }
-        .nav-item { color: #555; font-size: 20px; cursor: pointer; }
-        .nav-item.active { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+        .nav-item { font-size: 24px; color: #444; }
+        .nav-item.active { color: var(--accent); }
     </style>
 </head>
 <body>
+
     <div class="header">
         <div class="user-info">
-            <div class="avatar"></div>
-            <div style="font-weight: bold;">Danil Tushkov</div>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Danil" class="avatar">
+            <div>
+                <div style="font-size: 14px; color: #888;">Terminal v2.0</div>
+                <div style="font-weight: bold;">Danil Tushkov</div>
+            </div>
         </div>
-        <div style="color: var(--accent); font-weight: bold;">LIVE_NET</div>
+        <div id="clock">00:00:00</div>
     </div>
 
+    <div class="section-title"><span>📈</span> Market Live</div>
     <div class="rates-grid" id="rates-container">
-        <div class="rate-card"><div class="rate-title">Загрузка...</div></div>
-        <div class="rate-card"><div class="rate-title">Загрузка...</div></div>
+        <div class="rate-card"><div class="rate-title">Загрузка данных системы...</div></div>
     </div>
 
-    <div class="section-title">FRAGMENT SCANNER 🛸</div>
+    <div class="section-title"><span>💳</span> My Finance</div>
+    <div class="card-box">
+        <div class="card-number">UZCARD •••• 4321</div>
+        <div class="card-balance" id="card-sum">0 UZS</div>
+        <input type="number" id="new-balance" placeholder="Введите сумму для обновления">
+        <button onclick="updateBalance()">ОБНОВИТЬ БАЛАНС</button>
+    </div>
+
+    <div class="section-title"><span>🛸</span> Fragment Scan</div>
     <div class="scan-box">
-        <input type="text" id="model" placeholder="Модель (напр. White Rabbit)">
-        <input type="text" id="pattern" placeholder="Узор / Фон (напр. Starry)">
-        <button onclick="runScanner()" id="scan-btn">ЗАПУСТИТЬ ПОИСК</button>
-        <div id="loader" class="loader">> ПОДКЛЮЧЕНИЕ К УЗЛАМ...</div>
+        <input type="text" id="model" placeholder="Название (White Rabbit)">
+        <button onclick="runScanner()" id="scan-btn">НАЧАТЬ ПОИСК</button>
+        <div id="loader" class="loader">> CONNECTING TO FRAGMENT...</div>
+        <div id="results"></div>
     </div>
-
-    <div id="results"></div>
 
     <div class="nav">
         <div class="nav-item active">📊</div>
-        <div class="nav-item">🎁</div>
-        <div class="nav-item">💎</div>
-        <div class="nav-item">👤</div>
+        <div class="nav-item">🛡️</div>
+        <div class="nav-item">⚙️</div>
     </div>
 
     <script>
-        // Инициализация Telegram
         let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.headerColor = "#050508";
 
-        // 1. Загрузка курсов (UZS, TON, BTC)
-        async function loadData() {
+        // 1. ЧАСЫ
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+
+        // 2. ЗАГРУЗКА ВАЛЮТ
+        async function loadMarketData() {
             try {
-                let cbu = await fetch("https://cbu.uz/ru/arkhiv-kursov-valyut/json/").then(r => r.json());
-                let uzs = parseFloat(cbu[0].Rate);
+                // Курс Сума
+                const cbu = await fetch("https://cbu.uz/ru/arkhiv-kursov-valyut/json/").then(r => r.json());
+                const usdRate = parseFloat(cbu.find(c => c.Ccy === 'USD').Rate);
 
-                let cg = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,bitcoin&vs_currencies=usd&include_24hr_change=true").then(r => r.json());
-                let ton = cg['the-open-network'];
-                let btc = cg.bitcoin;
+                // Крипта
+                const cg = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true").then(r => r.json());
+                
+                const assets = [
+                    { id: 'the-open-network', name: 'TON', icon: '💎' },
+                    { id: 'bitcoin', name: 'BTC', icon: '🪙' },
+                    { id: 'ethereum', name: 'ETH', icon: '⟠' },
+                    { id: 'solana', name: 'SOL', icon: '☀️' }
+                ];
 
                 const container = document.getElementById('rates-container');
-                container.innerHTML = `
-                    <div class="rate-card">
-                        <div class="rate-title">TON / UZS</div>
-                        <div class="rate-value">${Math.floor(ton.usd * uzs).toLocaleString('ru-RU')}</div>
-                        <div class="trend ${ton.usd_24h_change >= 0 ? 'up' : 'down'}">
-                            ${ton.usd_24h_change >= 0 ? '▲' : '▼'} ${ton.usd_24h_change.toFixed(2)}%
-                        </div>
-                    </div>
-                    <div class="rate-card">
-                        <div class="rate-title">BTC / UZS</div>
-                        <div class="rate-value">${Math.floor(btc.usd * uzs).toLocaleString('ru-RU')}</div>
-                        <div class="trend ${btc.usd_24h_change >= 0 ? 'up' : 'down'}">
-                            ${btc.usd_24h_change >= 0 ? '▲' : '▼'} ${btc.usd_24h_change.toFixed(2)}%
-                        </div>
-                    </div>
-                `;
-            } catch (e) { console.error("Ошибка загрузки курсов", e); }
-        }
-        loadData();
+                container.innerHTML = "";
 
-        // 2. Парсер Fragment через JS + CORS Proxy
+                // Карточка USD/UZS
+                container.innerHTML += createCard("USD / UZS", usdRate, 0, "💵");
+
+                // Карточки крипты
+                assets.forEach(asset => {
+                    const data = cg[asset.id];
+                    const uzsPrice = data.usd * usdRate;
+                    container.innerHTML += createCard(`${asset.name} / UZS`, uzsPrice, data.usd_24h_change, asset.icon);
+                });
+
+            } catch (e) {
+                console.error("Ошибка сети:", e);
+            }
+        }
+
+        function createCard(title, value, change, icon) {
+            const isUp = change >= 0;
+            return `
+                <div class="rate-card">
+                    <div class="rate-title">${icon} ${title}</div>
+                    <div class="rate-value">${Math.floor(value).toLocaleString('ru-RU')}</div>
+                    ${change !== 0 ? `<div class="trend ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Автообновление каждые 5 минут
+        setInterval(loadMarketData, 300000);
+        loadMarketData();
+
+        // 3. ФИНАНСЫ (LocalStorage)
+        function updateBalance() {
+            const val = document.getElementById('new-balance').value;
+            if (val) {
+                localStorage.setItem('user_balance', val);
+                renderBalance();
+                tg.HapticFeedback.notificationOccurred('success');
+                document.getElementById('new-balance').value = "";
+            }
+        }
+
+        function renderBalance() {
+            const saved = localStorage.getItem('user_balance') || "0";
+            document.getElementById('card-sum').innerText = parseInt(saved).toLocaleString('ru-RU') + " UZS";
+        }
+        renderBalance();
+
+        // 4. СКАНЕР FRAGMENT
         async function runScanner() {
             const model = document.getElementById('model').value;
-            const pattern = document.getElementById('pattern').value;
+            if (!model) return tg.showAlert("Введите название!");
+
             const btn = document.getElementById('scan-btn');
             const loader = document.getElementById('loader');
-            const resultsDiv = document.getElementById('results');
+            const resDiv = document.getElementById('results');
 
-            if (!model && !pattern) {
-                tg.showAlert("Введите данные для поиска!");
-                return;
-            }
-
-            // Анимация загрузки
             btn.style.display = "none";
             loader.style.display = "block";
-            resultsDiv.style.display = "none";
-            resultsDiv.innerHTML = "";
-
-            // Формируем запрос через allorigins proxy, чтобы браузер не ругался
-            const query = encodeURIComponent(`${model} ${pattern}`.trim());
-            const targetUrl = `https://fragment.com/gifts?query=${query}`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            resDiv.style.display = "none";
 
             try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://fragment.com/gifts?query=' + model)}`;
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
                 
-                // Превращаем текст в HTML (виртуальный DOM)
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data.contents, "text/html");
-
-                // Ищем строки с подарками
                 const items = doc.querySelectorAll('tr.tm-row-selectable');
-                
+
                 if (items.length === 0) {
-                    resultsDiv.innerHTML = "<div style='text-align:center; color:#888;'>Ничего не найдено 🤷‍♂️</div>";
+                    resDiv.innerHTML = "<div style='text-align:center; color:#555;'>Ничего не найдено</div>";
                 } else {
-                    let htmlList = `<div style="font-size: 12px; color: #00ff88; margin-bottom: 10px;">> НАЙДЕНО ЛОТОВ: ${items.length}</div>`;
-                    
-                    // Берем первые 5 результатов
-                    for (let i = 0; i < Math.min(items.length, 5); i++) {
-                        let nameEl = items[i].querySelector('.tm-value');
-                        let priceEl = items[i].querySelector('.table-cell-value');
-                        
-                        let name = nameEl ? nameEl.innerText.trim() : "Неизвестно";
-                        let price = priceEl ? priceEl.innerText.trim() : "0";
-
-                        htmlList += `
-                            <div class="result-item">
-                                <span class="item-name">🎁 ${name}</span>
-                                <span class="item-price">💎 ${price}</span>
-                            </div>
-                        `;
-                    }
-                    resultsDiv.innerHTML = htmlList;
+                    let html = "";
+                    items.forEach((item, i) => {
+                        if (i < 5) {
+                            const name = item.querySelector('.tm-value')?.innerText || "NFT";
+                            const price = item.querySelector('.table-cell-value')?.innerText || "0";
+                            html += `<div class="result-item"><span>${name}</span><span style="color:var(--accent)">${price}</span></div>`;
+                        }
+                    });
+                    resDiv.innerHTML = html;
                 }
-                resultsDiv.style.display = "block";
-
-            } catch (error) {
-                tg.showAlert("Ошибка парсинга. Защита сайта или прокси недоступен.");
-                console.error(error);
+                resDiv.style.display = "block";
+            } catch (e) {
+                tg.showAlert("Ошибка связи с Fragment");
             } finally {
-                // Возвращаем интерфейс обратно
                 loader.style.display = "none";
                 btn.style.display = "block";
             }
