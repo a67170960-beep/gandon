@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal | Gifts & Crypto</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #0d0d12;
+            color: #b829ea; /* Кислотно-фиолетовый */
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0; padding: 20px;
+        }
+        h2 { 
+            color: #8a2be2; 
+            text-shadow: 0 0 8px #8a2be2; 
+            font-size: 18px;
+        }
+        .box {
+            border: 1px solid #8a2be2;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: rgba(20, 20, 30, 0.8);
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.2);
+        }
+        input, select, button {
+            background: #1a1a24;
+            color: #00ff00; /* Терминальный зеленый для ввода */
+            border: 1px solid #8a2be2;
+            padding: 10px;
+            width: 90%;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            outline: none;
+        }
+        button {
+            background: #8a2be2;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            width: 100%;
+            transition: 0.3s;
+        }
+        button:hover { box-shadow: 0 0 15px #8a2be2; }
+        #rates { color: #fff; font-size: 14px; line-height: 1.6; }
+        .val { color: #00ff00; font-weight: bold; }
+        .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; }
+    </style>
+</head>
+<body>
+    <h2>[ SYSTEM_RATES ]</h2>
+    <div class="box" id="rates">ОЖИДАНИЕ_ДАННЫХ...</div>
+
+    <h2>[ NFT_GIFT_SCANNER ]</h2>
+    <div class="box">
+        <label>> Модель (напр. White Rabbit):</label>
+        <input type="text" id="model" placeholder="_">
+        
+        <label>> Узор / Фон (напр. Starry):</label>
+        <input type="text" id="pattern" placeholder="_">
+        
+        <label>> Номер (опционально):</label>
+        <input type="number" id="num" placeholder="_">
+        
+        <button onclick="sendData()">START_SCAN()</button>
+    </div>
+
+    <div class="footer">
+        DEV: Danil Tushkov | SYSTEM ALIVE
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран
+
+        // Функция парсинга курсов валют прямо в браузере (чтобы не грузить бота)
+        async function loadRates() {
+            try {
+                // Берем курс Сума к Доллару из ЦБ РУз
+                let cbuRes = await fetch("https://cbu.uz/ru/arkhiv-kursov-valyut/json/");
+                let cbuData = await cbuRes.json();
+                let usdToUzs = parseFloat(cbuData[0].Rate);
+
+                // Берем курс крипты к Доллару
+                let cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,bitcoin&vs_currencies=usd");
+                let cgData = await cgRes.json();
+                
+                let btcUsd = cgData.bitcoin.usd;
+                let tonUsd = cgData['the-open-network'].usd;
+
+                // Считаем всё в сумах
+                let btcUzs = Math.floor(btcUsd * usdToUzs).toLocaleString('ru-RU');
+                let tonUzs = Math.floor(tonUsd * usdToUzs).toLocaleString('ru-RU');
+                let usdStr = usdToUzs.toLocaleString('ru-RU');
+
+                document.getElementById('rates').innerHTML = `
+                    1 USD = <span class="val">${usdStr}</span> UZS<br>
+                    1 TON = <span class="val">${tonUzs}</span> UZS<br>
+                    1 BTC = <span class="val">${btcUzs}</span> UZS
+                `;
+            } catch (e) {
+                document.getElementById('rates').innerHTML = "ERROR: CONNECTION_FAILED";
+            }
+        }
+
+        loadRates();
+
+        // Отправка данных обратно в бота
+        function sendData() {
+            let data = {
+                model: document.getElementById('model').value,
+                pattern: document.getElementById('pattern').value,
+                num: document.getElementById('num').value
+            };
+            // Отправляем JSON в бота
+            tg.sendData(JSON.stringify(data));
+            tg.close(); // Закрываем Mini App
+        }
+    </script>
+</body>
+</html>
+
