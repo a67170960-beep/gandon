@@ -44,32 +44,48 @@
         .up { color: var(--green); } .down { color: var(--red); }
 
         /* Секция парсинга */
-        .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px; color: var(--accent); }
+        .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px; color: var(--accent); text-shadow: 0 0 5px var(--accent); }
         .scan-box {
             background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0f 100%);
             padding: 20px; border-radius: 20px; border: 1px solid var(--accent);
+            margin-bottom: 20px;
         }
         input {
             width: 100%; background: #000; border: 1px solid #333;
             padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 10px;
-            box-sizing: border-box; outline: none;
+            box-sizing: border-box; outline: none; font-family: 'Courier New', monospace;
         }
-        input:focus { border-color: var(--accent); }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(184, 41, 234, 0.5); }
         button {
             width: 100%; background: var(--accent); color: #fff; border: none;
             padding: 15px; border-radius: 12px; font-weight: bold; font-size: 16px;
-            box-shadow: 0 4px 15px rgba(184, 41, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(184, 41, 234, 0.4); cursor: pointer; transition: 0.2s;
         }
+        button:active { transform: scale(0.98); }
+
+        /* Результаты парсинга */
+        #results {
+            background: var(--card-bg); border-radius: 16px; padding: 15px;
+            border: 1px solid #333; display: none;
+        }
+        .result-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #333;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .item-name { font-size: 14px; color: #ccc; }
+        .item-price { font-size: 16px; font-weight: bold; color: var(--accent); }
+        .loader { color: var(--green); font-family: 'Courier New', monospace; text-align: center; display: none; margin-top: 10px;}
 
         /* Нижнее меню */
         .nav {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: rgba(22, 22, 33, 0.95);
             display: flex; justify-content: space-around; padding: 15px;
-            backdrop-filter: blur(10px); border-top: 1px solid #333;
+            backdrop-filter: blur(10px); border-top: 1px solid #333; z-index: 10;
         }
         .nav-item { color: #555; font-size: 20px; cursor: pointer; }
-        .nav-item.active { color: var(--accent); }
+        .nav-item.active { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
     </style>
 </head>
 <body>
@@ -78,18 +94,23 @@
             <div class="avatar"></div>
             <div style="font-weight: bold;">Danil Tushkov</div>
         </div>
-        <div style="color: var(--accent); font-weight: bold;">LIVE</div>
+        <div style="color: var(--accent); font-weight: bold;">LIVE_NET</div>
     </div>
 
     <div class="rates-grid" id="rates-container">
-        </div>
-
-    <div class="section-title">Scanner Portal 🛸</div>
-    <div class="scan-box">
-        <input type="text" id="model" placeholder="Модель (Cyber Lion...)">
-        <input type="text" id="pattern" placeholder="Узор / Фон">
-        <button onclick="sendData()">ЗАПУСТИТЬ ПОИСК</button>
+        <div class="rate-card"><div class="rate-title">Загрузка...</div></div>
+        <div class="rate-card"><div class="rate-title">Загрузка...</div></div>
     </div>
+
+    <div class="section-title">FRAGMENT SCANNER 🛸</div>
+    <div class="scan-box">
+        <input type="text" id="model" placeholder="Модель (напр. White Rabbit)">
+        <input type="text" id="pattern" placeholder="Узор / Фон (напр. Starry)">
+        <button onclick="runScanner()" id="scan-btn">ЗАПУСТИТЬ ПОИСК</button>
+        <div id="loader" class="loader">> ПОДКЛЮЧЕНИЕ К УЗЛАМ...</div>
+    </div>
+
+    <div id="results"></div>
 
     <div class="nav">
         <div class="nav-item active">📊</div>
@@ -99,18 +120,17 @@
     </div>
 
     <script>
+        // Инициализация Telegram
         let tg = window.Telegram.WebApp;
         tg.expand();
 
+        // 1. Загрузка курсов (UZS, TON, BTC)
         async function loadData() {
             try {
-                // Курс сума
                 let cbu = await fetch("https://cbu.uz/ru/arkhiv-kursov-valyut/json/").then(r => r.json());
                 let uzs = parseFloat(cbu[0].Rate);
 
-                // Крипта + % изменения за 24ч
                 let cg = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,bitcoin&vs_currencies=usd&include_24hr_change=true").then(r => r.json());
-                
                 let ton = cg['the-open-network'];
                 let btc = cg.bitcoin;
 
@@ -118,34 +138,92 @@
                 container.innerHTML = `
                     <div class="rate-card">
                         <div class="rate-title">TON / UZS</div>
-                        <div class="rate-value">${Math.floor(ton.usd * uzs).toLocaleString()}</div>
+                        <div class="rate-value">${Math.floor(ton.usd * uzs).toLocaleString('ru-RU')}</div>
                         <div class="trend ${ton.usd_24h_change >= 0 ? 'up' : 'down'}">
                             ${ton.usd_24h_change >= 0 ? '▲' : '▼'} ${ton.usd_24h_change.toFixed(2)}%
                         </div>
                     </div>
                     <div class="rate-card">
                         <div class="rate-title">BTC / UZS</div>
-                        <div class="rate-value">${Math.floor(btc.usd * uzs).toLocaleString()}</div>
+                        <div class="rate-value">${Math.floor(btc.usd * uzs).toLocaleString('ru-RU')}</div>
                         <div class="trend ${btc.usd_24h_change >= 0 ? 'up' : 'down'}">
                             ${btc.usd_24h_change >= 0 ? '▲' : '▼'} ${btc.usd_24h_change.toFixed(2)}%
                         </div>
                     </div>
                 `;
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Ошибка загрузки курсов", e); }
         }
-
         loadData();
 
-        function sendData() {
-            let obj = {
-                model: document.getElementById('model').value,
-                pattern: document.getElementById('pattern').value
-            };
-            tg.sendData(JSON.stringify(obj));
-            tg.close();
+        // 2. Парсер Fragment через JS + CORS Proxy
+        async function runScanner() {
+            const model = document.getElementById('model').value;
+            const pattern = document.getElementById('pattern').value;
+            const btn = document.getElementById('scan-btn');
+            const loader = document.getElementById('loader');
+            const resultsDiv = document.getElementById('results');
+
+            if (!model && !pattern) {
+                tg.showAlert("Введите данные для поиска!");
+                return;
+            }
+
+            // Анимация загрузки
+            btn.style.display = "none";
+            loader.style.display = "block";
+            resultsDiv.style.display = "none";
+            resultsDiv.innerHTML = "";
+
+            // Формируем запрос через allorigins proxy, чтобы браузер не ругался
+            const query = encodeURIComponent(`${model} ${pattern}`.trim());
+            const targetUrl = `https://fragment.com/gifts?query=${query}`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+            try {
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                // Превращаем текст в HTML (виртуальный DOM)
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, "text/html");
+
+                // Ищем строки с подарками
+                const items = doc.querySelectorAll('tr.tm-row-selectable');
+                
+                if (items.length === 0) {
+                    resultsDiv.innerHTML = "<div style='text-align:center; color:#888;'>Ничего не найдено 🤷‍♂️</div>";
+                } else {
+                    let htmlList = `<div style="font-size: 12px; color: #00ff88; margin-bottom: 10px;">> НАЙДЕНО ЛОТОВ: ${items.length}</div>`;
+                    
+                    // Берем первые 5 результатов
+                    for (let i = 0; i < Math.min(items.length, 5); i++) {
+                        let nameEl = items[i].querySelector('.tm-value');
+                        let priceEl = items[i].querySelector('.table-cell-value');
+                        
+                        let name = nameEl ? nameEl.innerText.trim() : "Неизвестно";
+                        let price = priceEl ? priceEl.innerText.trim() : "0";
+
+                        htmlList += `
+                            <div class="result-item">
+                                <span class="item-name">🎁 ${name}</span>
+                                <span class="item-price">💎 ${price}</span>
+                            </div>
+                        `;
+                    }
+                    resultsDiv.innerHTML = htmlList;
+                }
+                resultsDiv.style.display = "block";
+
+            } catch (error) {
+                tg.showAlert("Ошибка парсинга. Защита сайта или прокси недоступен.");
+                console.error(error);
+            } finally {
+                // Возвращаем интерфейс обратно
+                loader.style.display = "none";
+                btn.style.display = "block";
+            }
         }
     </script>
 </body>
 </html>
-
 
